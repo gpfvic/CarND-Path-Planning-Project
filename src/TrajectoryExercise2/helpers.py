@@ -98,6 +98,7 @@ def show_trajectory(s_coeffs, d_coeffs, T, vehicle=None):
     plt.scatter(X,Y,color="blue")
     if vehicle:
         plt.scatter(X2, Y2,color="red")
+    print(str(len(X)) +"=="+str(len(X2)))
     plt.show()
 
 def get_f_and_N_derivatives(coeffs, N=3):

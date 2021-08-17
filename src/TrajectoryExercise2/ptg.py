@@ -5,17 +5,23 @@ from constants import *
 
 # TODO - tweak weights to existing cost functions
 WEIGHTED_COST_FUNCTIONS = [
-    (time_diff_cost,    1),
-    (s_diff_cost,       1),
-    (d_diff_cost,       1),
-    (efficiency_cost,   1),
-    (max_jerk_cost,     1),
-    (total_jerk_cost,   1),
-    (collision_cost,    1),
-    (buffer_cost,       1),
-    (max_accel_cost,    1),
+    (time_diff_cost,    10),
+    (s_diff_cost,       100),
+    (d_diff_cost,       100),
+    (efficiency_cost,   10),
+    (max_jerk_cost,     100),
+    (total_jerk_cost,   10),
+    (collision_cost,    100),
+    (buffer_cost,       10),
+    (max_accel_cost,    3),
     (total_accel_cost,  1),
 ]
+
+# T - the duration of maneuver in seconds.
+# abs(acc*dt) is the velocity increment in dt
+# total_acc is the average acceleration in time T, 
+# so the cumulative sum of the velocity increments di vided by T, 
+# that is acc=dV/T
 
 def PTG(start_s, start_d, target_vehicle, delta, T, predictions):
     """
