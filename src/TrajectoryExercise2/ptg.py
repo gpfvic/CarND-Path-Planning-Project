@@ -77,7 +77,16 @@ def PTG(start_s, start_d, target_vehicle, delta, T, predictions):
         d_coefficients = JMT(start_d, d_goal, t)
         trajectories.append(tuple([s_coefficients, d_coefficients, t]))
     
-    best = min(trajectories, key=lambda tr: calculate_cost(tr, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS))
+    best = min(trajectories, 
+               key=lambda tr: 
+                   calculate_cost(
+                       tr, 
+                       target_vehicle, 
+                       delta, 
+                       T, 
+                       predictions, 
+                       WEIGHTED_COST_FUNCTIONS))
+    
     calculate_cost(best, target_vehicle, delta, T, predictions, WEIGHTED_COST_FUNCTIONS, verbose=True)
     return best
     

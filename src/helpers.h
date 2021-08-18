@@ -1,11 +1,22 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
-#include <math.h>
+#include <iostream>
 #include <string>
 #include <vector>
+#include <cassert>
+#include <algorithm>
+#include <cmath>
+#include <map>
+#include "Eigen-3.3/Eigen/Dense"
+#include "spline.h"
+#include "constants.h"
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 // for convenience
+using namespace std;
 using std::string;
 using std::vector;
 
@@ -153,5 +164,131 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
 
   return {x,y};
 }
+
+vector<double> jmt(vector<double> start, vector<double> end, double T){
+  /*
+    Calculates Jerk Minimizing Trajectory for start, end and T.
+    INPUTS  
+    start - the vehicles initial location [s, s_dot, s_dot_dot]
+    end   - the desired end location [s, s_dot, s_dot_dot]
+    T     - the duration of maneuver in seconds.
+    OUTPUT 
+    output  - 6 polynomial coefficents for the function 
+      s(t) = a_0 + a_1 * t + a_2 * t**2 + a_3 * t**3 + a_4 * t**4 + a_5 * t**5
+  */
+  double T2 = T * T;
+  double T3 = T2 * T;
+  double T4 = T3 * T;
+  double T5 = T4 * T;
+  
+  MatrixXd a(3,3);
+  a <<  T3, T4, T5,
+        3*T2, 4*T3, 5*T4,
+        6*T,  12*T2,  20*T3;
+  MatrixXd aInv = a.inverse();
+
+  VectorXd b(3);
+  b <<  end[0]  - (start[0]  +  start[1]*T  + 0.5*start[2]*T2),
+        end[1]  - (             start[1]    + start[2]*T),
+        end[2]  - (                           start[2]);
+  VectorXd alphas = aInv * b;
+  vector<double> output = {start[0],start[1],0.5*start[2],alphas[0],alphas[1],alphas[2]};
+  return output;
+}
+
+
+vector<double> interpolate_points(vector<double> ptsx, vector<double> ptsy,
+                            double interval, int output_size){
+  if(ptsx.size()!=ptsy.size()){
+    cout <<"ERROR! Spline: interpolate points size is not matched!" << endl;
+    return {0};
+  }
+  tk::spline s;
+  s.set_points(ptsx,ptsy);
+  vector<double> output;
+  for(int i=0;i<output_size;i++){
+    output.push_back(s(ptsx[0]+i*interval));
+  }
+  return output;
+}
+
+vector<double> interpolate_points(vector<double> pts_x, vector<double> pts_y, 
+                                  vector<double> eval_at_x) {
+  // uses the spline library to interpolate points connecting a series of x and y values
+  // output is spline evaluated at each eval_at_x point
+
+  if (pts_x.size() != pts_y.size()) {
+    cout << "ERROR! SMOOTHER: interpolate_points size mismatch between pts_x and pts_y" << endl;
+    return { 0 };
+  }
+
+  tk::spline s;
+  s.set_points(pts_x,pts_y);    // currently it is required that X is already sorted
+  vector<double> output;
+  for (double x: eval_at_x) {
+    output.push_back(s(x));
+  }
+  return output;
+}
+
+double nearest_approach(vector<double> s_traj, vector<double> d_traj, vector<vector<double>> prediction){
+  double closest = 99999;
+  for (int i=0; i<N_SAMPLES;i++){
+    double current_dist = sqrt(pow(s_traj[i]-prediction[i][0],2) + pow(d_traj[i] - prediction[i][1], 2));
+    if(current_dist < closest){
+      closest = current_dist;
+    }
+  }
+  return closest;
+}
+
+double nearest_approach_to_any_vehicle(vector<double> s_traj, vector<double> d_traj, 
+                                      map<int, vector<vector<double>>> predictions){
+  double closest = 99999;
+  for(auto prediction: predictions){
+    double current_dist = nearest_approach(s_traj, d_traj, prediction.second);
+    if(current_dist<closest){
+      closest = current_dist;
+    }
+  }
+  return closest;
+}
+
+double nearest_approach_to_any_vehicle_in_lane(vector<double> s_traj, vector<double> d_traj,  map<int,vector<vector<double>>> predictions) {
+  double closest = 9999;
+  for(auto prediction: predictions){
+    double my_final_d = d_traj[d_traj.size() - 1];
+    int my_lane = my_final_d / 4; //4 meters
+    vector<vector<double>> pred_traj = prediction.second;
+    double pred_final_d = pred_traj[pred_traj.size()-1][1];
+    int pred_lane = pred_final_d / 4;
+    if(my_lane == pred_lane){
+      double current_dist = nearest_approach(s_traj, d_traj, prediction.second);
+      if(current_dist<closest && current_dist<120){
+        closest = current_dist;
+      }
+    }
+    return closest;
+  }
+}
+
+vector<double> velocities_for_trajectory(vector<double> traj){
+  // get the average velocities for the given trajectory which is made up by predicted points of the road
+  vector<double> vels;
+  for (int i=1;i<traj.size();i++){
+    vels.push_back( (traj[i] - traj[i-1])/DT);
+  }
+  return vels;
+}
+
+
+
+
+
+double logistic(double x){
+  return 2.0 / (1+exp(-x)) - 1.0;
+}
+
+
 
 #endif  // HELPERS_H

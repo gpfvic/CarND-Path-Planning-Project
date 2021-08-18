@@ -1,6 +1,10 @@
 {
   "files.associations": {
     "core": "cpp",
-    "functional": "cpp"
-  }
+    "functional": "cpp",
+    "random": "cpp",
+    "algorithm": "cpp",
+    "dense": "cpp"
+  },
+  "C_Cpp.errorSquiggles": "Disabled"
 }
