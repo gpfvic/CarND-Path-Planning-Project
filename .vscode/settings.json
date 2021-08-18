@@ -4,7 +4,14 @@
     "functional": "cpp",
     "random": "cpp",
     "algorithm": "cpp",
-    "dense": "cpp"
+    "dense": "cpp",
+    "cmath": "cpp",
+    "complex": "cpp",
+    "array": "cpp",
+    "hash_map": "cpp",
+    "initializer_list": "cpp",
+    "utility": "cpp",
+    "valarray": "cpp"
   },
   "C_Cpp.errorSquiggles": "Disabled"
 }
