@@ -73,7 +73,7 @@ vector<Vehicle> Vehicle::choose_next_state(vector<Vehicle> &other_cars)
         if (trajectory.size() != 0)
         {
         
-            cost = calculate_cost(*this, other_cars, trajectory);
+            cost = compute_total_cost(*this, other_cars, trajectory);
             costs.push_back(cost);
             final_trajectories.push_back(trajectory);
         }

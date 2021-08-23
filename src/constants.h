@@ -1,6 +1,16 @@
 #ifndef CONSTANTS
 #define CONSTANTS
 
+
+#define REACH_GOAL 10
+#define EFFICIENCY 1000
+#define OFFROAD 100000
+#define LANECHANGE 100
+#define MAX_S 6945.554 
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
 #define VEHICLE_RADIUS 1.25              // meters
 #define FOLLOW_DISTANCE 8.0              // distance to keep behind leading cars
 
