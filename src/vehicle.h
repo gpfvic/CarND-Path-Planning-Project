@@ -1,58 +1,65 @@
 #ifndef VEHICLE
 #define VEHICLE
 
+#include <string>
 #include <vector>
 #include <map>
-#include <string>
 
+using std::string;
+using std::vector;
 using namespace std;
 
-class Vehicle {
+class Vehicle
+{
 public:
+    // Constructors
+    Vehicle();
 
-  double s;
-  double s_d;
-  double s_dd;
-  double d;
-  double d_d;
-  double d_dd;
-  string state;
-  vector<string> available_states;
-  vector<double> s_traj_coeffs, d_traj_coeffs;
+    Vehicle(int lane, double s, double v, double a, string state = "KL");
 
-  /**
-  * Constructors
-  */
-  Vehicle();
-  Vehicle(double s, double s_d, double s_dd, double d, double d_d, double d_dd);
+    // Destructor
+    virtual ~Vehicle();
 
-  /**
-  * Destructor
-  */
-  virtual ~Vehicle();
+    // Vehicle functions
+    void update(double x_in, double y_in, double car_s, double car_d, double car_yaw, double car_speed);
+    vector<Vehicle> choose_next_state(vector<Vehicle> &predictions);
 
-  // DEPRECATED
-  vector<vector<double>> get_best_frenet_trajectory(map<int, vector<vector<double>>> predictions, double duration);
+    vector<string> successor_states();
 
-  void update_available_states(bool car_to_left, bool car_to_right);
+    vector<Vehicle> generate_trajectory(string state,
+                                         vector<Vehicle> &predictions);
 
-  vector<vector<double>> get_target_for_state(string state, map<int, vector<vector<double>>> predictions, double duration, bool car_just_ahead);
+    vector<double> get_kinematics(vector<Vehicle> &predictions, int lane);
 
-  vector<double> get_leading_vehicle_data_for_lane(int target_lane, map<int, vector<vector<double>>> predictions, double duration);
+    vector<Vehicle> keep_lane_trajectory( vector<Vehicle> &predictions);
 
-  // DEPRECATED
-  vector<vector<double>> perturb(vector<vector<double>> target_s_and_d);
+    vector<Vehicle> lane_change_trajectory(string state,
+                                           vector<Vehicle> &predictions);
 
-  vector<vector<double>> generate_traj_for_target(vector<vector<double>> perturbed_target, double duration);
+    vector<Vehicle> prep_lane_change_trajectory(string state,
+                                                vector<Vehicle> &predictions);
 
-  vector<double> differentiate_coeffs(vector<double> coeffs); 
 
-  double evaluate_coeffs_at_time(vector<double> coeffs, double time);
+    bool get_vehicle_behind( vector<Vehicle> &predictions, int lane,
+                            Vehicle &rCar);
 
-  vector<vector<double>> generate_predictions(double traj_start_time, double duration);
+    bool get_vehicle_ahead( vector<Vehicle> &predictions, int lane,
+                           Vehicle &rCar);
 
-  string display();
+    void realize_next_state(vector<Vehicle> &trajectory);
 
+    map<string, int> lane_direction = {{"PLCL", -1}, {"LCL", -1}, {"LCR", 1}, {"PLCR", 1}};
+
+    int L = 1,lane_min = 0, lane_max = 2;
+    
+    int preferred_buffer = 10; // impacts "keep lane" behavior.
+
+    int lane, s, goal_lane, goal_s, lanes_available = 3;
+
+    double x, y, yaw, current_speed, d,target_speed, a, max_acceleration, waste_debug;
+
+    string state;
+
+    bool too_close;
 };
-
 #endif
