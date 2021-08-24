@@ -40,27 +40,6 @@ Vehicle::~Vehicle() {}
 
 void Vehicle::transition_to_next_state(vector<Vehicle> &other_cars)
 {
-    /**
-   * Here you can implement the transition_function code from the Behavior 
-   *   Planning Pseudocode classroom concept.
-   *
-   * @param A other_cars map. This is a map of vehicle id keys with predicted
-   *   vehicle trajectories as values. Trajectories are a vector of Vehicle 
-   *   objects representing the vehicle at the current timestep and one timestep
-   *   in the future.
-   * @output The best (lowest cost) trajectory corresponding to the next ego 
-   *   vehicle state.
-   *
-   * Functions:
-   * 1. successor_states - Uses the current state to return a vector of possible
-   *    successor states for the finite state machine.
-   * 2. generate_trajectory - Returns a vector of Vehicle objects representing 
-   *    a vehicle trajectory, given a state and other_cars. Note that 
-   *    trajectory vectors might have size 0 if no possible trajectory exists 
-   *    for the state. 
-   * 3. calculate_cost - Included from cost.cpp, computes the cost for a trajectory.
-
-   */
     vector<string> fsm = successor_states();
     double min_cost = 999999;
     vector<Vehicle> final_trajectory;
@@ -82,7 +61,6 @@ void Vehicle::transition_to_next_state(vector<Vehicle> &other_cars)
     this->current_speed = next_state.current_speed;
     this->current_lane = next_state.current_lane;
     this->accel = next_state.accel;
-
 }
 
 vector<string> Vehicle::successor_states()

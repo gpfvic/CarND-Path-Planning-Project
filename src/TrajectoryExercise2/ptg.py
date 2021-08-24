@@ -17,7 +17,7 @@ WEIGHTED_COST_FUNCTIONS = [
     (total_accel_cost,  1),
 ]
 
-# T - the duration of maneuver in seconds.
+
 # abs(acc*dt) is the velocity increment in dt
 # total_acc is the average acceleration in time T, 
 # so the cumulative sum of the velocity increments di vided by T, 

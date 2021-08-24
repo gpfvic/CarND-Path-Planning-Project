@@ -86,7 +86,6 @@ int main()
           double car_yaw = j[1]["yaw"];
           double car_speed = j[1]["speed"];
 
-          // std::cout << " car_speed" << car_speed << std::endl;
           ego_car.update(car_x, car_y, car_s, car_d, car_yaw, car_speed);
 
           // Previous path data given to the Planner
@@ -154,9 +153,11 @@ int main()
               ptsy.push_back(ref_y);
             }
 
+            // FSM: based on the ego car and other cars' states, determine the ego car's next state
             vector<Vehicle> other_cars = check_other_vehicles_info_by_sensor_fusion(sensor_fusion, ego_car, prev_size);
             ego_car.transition_to_next_state(other_cars);
 
+            // generate the Trajectory
             vector<double> next_wp0 = getXY(ego_car.s+40, (2+4*ego_car.current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
             vector<double> next_wp1 = getXY(ego_car.s+80, (2+4*ego_car.current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
             vector<double> next_wp2 = getXY(ego_car.s+120, (2+4* ego_car.current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
