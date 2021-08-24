@@ -155,9 +155,7 @@ int main()
             }
 
             vector<Vehicle> other_cars = check_other_vehicles_info_by_sensor_fusion(sensor_fusion, ego_car, prev_size);
-            vector<Vehicle> trajectory = ego_car.choose_next_state(other_cars);
-
-            ego_car.realize_next_state(trajectory);
+            ego_car.transition_to_next_state(other_cars);
 
             vector<double> next_wp0 = getXY(ego_car.s+40, (2+4*ego_car.current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
             vector<double> next_wp1 = getXY(ego_car.s+80, (2+4*ego_car.current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
@@ -233,7 +231,6 @@ int main()
             // End
             msgJson["next_x"] = next_x_vals;
             msgJson["next_y"] = next_y_vals;
-            cout << "-----------------------------------------------" << endl;
 
             auto msg = "42[\"control\"," + msgJson.dump() + "]";
 

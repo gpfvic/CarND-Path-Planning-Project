@@ -40,7 +40,7 @@ public:
     // Vehicle functions
     void update(double x_in, double y_in, double car_s, double car_d, double car_yaw, double car_speed);
 
-    vector<Vehicle> choose_next_state(vector<Vehicle> &predictions);
+    void transition_to_next_state(vector<Vehicle> &predictions);
 
     vector<string> successor_states();
 
@@ -58,7 +58,6 @@ public:
 
     bool get_vehicle_ahead( vector<Vehicle> &predictions, int lane, Vehicle &rCar);
 
-    void realize_next_state(vector<Vehicle> &trajectory);
 
 };
 #endif

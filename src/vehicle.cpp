@@ -38,7 +38,7 @@ Vehicle::Vehicle(int lane, double s, double v, double accel, string state)
 
 Vehicle::~Vehicle() {}
 
-vector<Vehicle> Vehicle::choose_next_state(vector<Vehicle> &other_cars)
+void Vehicle::transition_to_next_state(vector<Vehicle> &other_cars)
 {
     /**
    * Here you can implement the transition_function code from the Behavior 
@@ -62,25 +62,27 @@ vector<Vehicle> Vehicle::choose_next_state(vector<Vehicle> &other_cars)
 
    */
     vector<string> fsm = successor_states();
-    float cost;
-    vector<float> costs;
-    vector<vector<Vehicle>> final_trajectories;
+    double min_cost = 999999;
+    vector<Vehicle> final_trajectory;
 
-    for (vector<string>::iterator it = fsm.begin(); it != fsm.end(); ++it)
+    for(string state : fsm)
     {
-        vector<Vehicle> trajectory = generate_trajectory(*it, other_cars);
+        vector<Vehicle> trajectory = generate_trajectory(state, other_cars);
         if (trajectory.size() != 0)
         {
-            cost = compute_total_cost(*this, other_cars, trajectory);
-            costs.push_back(cost);
-            final_trajectories.push_back(trajectory);
+            double cost = compute_total_cost(*this, other_cars, trajectory);
+            if (cost < min_cost){
+                min_cost = cost;
+                final_trajectory = trajectory;
+            }
         }
     }
+    Vehicle next_state = final_trajectory[1];
+    this->state = next_state.state;
+    this->current_speed = next_state.current_speed;
+    this->current_lane = next_state.current_lane;
+    this->accel = next_state.accel;
 
-    vector<float>::iterator best_cost = min_element(begin(costs), end(costs));
-    int best_idx = distance(begin(costs), best_cost);
-
-    return final_trajectories[best_idx];
 }
 
 vector<string> Vehicle::successor_states()
@@ -129,7 +131,7 @@ vector<Vehicle> Vehicle::generate_trajectory(string current_state, vector<Vehicl
     // lane change left
     else if (current_state.compare("LCL") == 0 || current_state.compare("LCR") == 0)
     {
-        trajectory  =lane_change_trajectory(current_state, other_cars);
+        trajectory  = lane_change_trajectory(current_state, other_cars);
     }
     // prepare lane change right 
     else if (current_state.compare("PLCL") == 0 || current_state.compare("PLCR") == 0)
@@ -150,7 +152,6 @@ vector<double> Vehicle::get_kinematics(vector<Vehicle> &other_cars, int lane)
     double new_accel;
     Vehicle car_ahead;
     Vehicle car_behind;
-    double nix = 0;
 
     if (get_vehicle_ahead(other_cars, lane, car_ahead))
     {
@@ -164,7 +165,7 @@ vector<double> Vehicle::get_kinematics(vector<Vehicle> &other_cars, int lane)
             }
             else
             {
-                new_velocity = std::max(std::max(car_ahead.current_speed, min_velocity_accel_limit),nix);
+                new_velocity = std::max(std::max(car_ahead.current_speed, min_velocity_accel_limit),0.);
             }
         }
         else
@@ -177,7 +178,7 @@ vector<double> Vehicle::get_kinematics(vector<Vehicle> &other_cars, int lane)
             }
             else
             {
-                new_velocity = std::max(std::max(max_velocity_in_front, min_velocity_accel_limit), nix);
+                new_velocity = std::max(std::max(max_velocity_in_front, min_velocity_accel_limit), 0.);
             }
         }
     }
@@ -196,7 +197,8 @@ vector<double> Vehicle::get_kinematics(vector<Vehicle> &other_cars, int lane)
 vector<Vehicle> Vehicle::keep_lane_trajectory(vector<Vehicle> &other_cars)
 {
     // Generate a keep lane trajectory.
-    vector<Vehicle> trajectory = {Vehicle(current_lane, this->s, this->current_speed, this->accel, state)};
+    vector<Vehicle> trajectory;
+    trajectory.push_back(Vehicle(current_lane, this->s, this->current_speed, this->accel, state));
     vector<double> kinematics = get_kinematics(other_cars, this->current_lane);
     double new_s = kinematics[0];
     double new_v = kinematics[1];
@@ -213,9 +215,11 @@ vector<Vehicle> Vehicle::prep_lane_change_trajectory(string current_state, vecto
     double new_accel;
     Vehicle vehicle_behind;
     int new_lane = this->current_lane + lane_direction_transition[current_state];
-    vector<Vehicle> trajectory = {Vehicle(this->current_lane, this->s, this->current_speed, this->accel, this->state)};
-    vector<double> curr_lane_new_kinematics = get_kinematics(other_cars, this->current_lane);
 
+    vector<Vehicle> trajectory;
+    trajectory.push_back(Vehicle(this->current_lane, this->s, this->current_speed, this->accel, this->state));
+    
+    vector<double> curr_lane_new_kinematics = get_kinematics(other_cars, this->current_lane);
     if (get_vehicle_behind(other_cars, this->current_lane, vehicle_behind))
     {
         // Keep speed of current lane so as not to collide with car behind.
@@ -309,12 +313,3 @@ bool Vehicle::get_vehicle_ahead(vector<Vehicle> &other_cars, int lane, Vehicle &
     return found_vehicle;
 }
 
-void Vehicle::realize_next_state(vector<Vehicle> &trajectory)
-{
-    // Sets state and kinematics for ego vehicle using the last state of the trajectory.
-    Vehicle next_state = trajectory[1];
-    this->state = next_state.state;
-    this->current_speed = next_state.current_speed;
-    this->current_lane = next_state.current_lane;
-    this->accel = next_state.accel;
-}

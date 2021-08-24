@@ -89,7 +89,7 @@ float goal_distance_cost(const Vehicle &vehicle,
   //   change) and final lane of trajectory.
   // Cost of being out of goal lane also becomes larger as vehicle approaches
   //   goal distance.
-  float cost;
+  double cost;
   float distance = data["distance_to_goal"];
   if (distance > 0)
   {
@@ -99,8 +99,7 @@ float goal_distance_cost(const Vehicle &vehicle,
   {
     cost = 0;
   }
-  float nix = 0;
-  cost = max(nix, cost);
+  cost = max(0., cost);
   return cost;
 }
 
@@ -108,33 +107,33 @@ float goal_distance_cost(const Vehicle &vehicle,
 // car target_speed
 float inefficiency_cost(const Vehicle &car,
                         const vector<Vehicle> &trajectory,
-                        const vector<Vehicle> &predictions,
+                        const vector<Vehicle> &other_cars,
                         map<string, int> &data)
 {
   // Cost becomes higher for trajectories with intended lane and final lane
   //  that have traffic slower than vehicle's target speed.
   // You can use the lane_speed function to determine the speed for a lane.
-  float proposed_speed_intended = lane_speed(predictions, data["intended_lane"]);
+  float proposed_speed_intended = lane_speed(other_cars, data["intended_lane"]);
   if (proposed_speed_intended < 0)
   {
     proposed_speed_intended = car.target_speed;
   }
 
-  float proposed_speed_final = lane_speed(predictions, data["final_lane"]);
+
+  float proposed_speed_final = lane_speed(other_cars, data["final_lane"]);
   if (proposed_speed_final < 0)
   {
     proposed_speed_final = car.target_speed;
   }
 
-  float cost = (2.0 * car.target_speed - proposed_speed_intended - proposed_speed_final) / car.target_speed;
-  float nix = 0;
-  cost = max(nix, cost);
+  double cost = (2.0*car.target_speed - proposed_speed_intended - proposed_speed_final) / car.target_speed;
+  cost = max(0., cost);
   return cost;
 }
 
 float offroad_cost(const Vehicle &vehicle,
                    const vector<Vehicle> &trajectory,
-                   const vector<Vehicle> &predictions,
+                   const vector<Vehicle> &other_cars,
                    map<string, int> &data)
 {
   // Cost penalize trajectories that are off the streed based on distance of intended lane (for planning a lane
@@ -153,7 +152,7 @@ float offroad_cost(const Vehicle &vehicle,
 
 float change_lane_cost(const Vehicle &car,
                        const vector<Vehicle> &trajectory,
-                       const vector<Vehicle> &predictions,
+                       const vector<Vehicle> &other_cars,
                        map<string, int> &data)
 {
   // Cost penalize trajectories that are change the lane. So that a lane change have to have a
@@ -173,7 +172,7 @@ float change_lane_cost(const Vehicle &car,
 
 float speedlimit_cost(const Vehicle &car,
                       const vector<Vehicle> &trajectory,
-                      const vector<Vehicle> &predictions,
+                      const vector<Vehicle> &other_cars,
                       map<string, int> &data)
 {
   // Cost penalize trajectories that exeed speedlimit based on.
