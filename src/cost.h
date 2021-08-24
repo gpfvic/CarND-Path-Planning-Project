@@ -37,19 +37,19 @@ map<string, int> get_helper_data(const Vehicle &ego_car,
 
   if (trajectory_last.state.compare("PLCL") == 0)
   {
-    intended_lane = trajectory_last.lane - 1;
+    intended_lane = trajectory_last.current_lane - 1;
   }
   else if (trajectory_last.state.compare("PLCR") == 0)
   {
-    intended_lane = trajectory_last.lane + 1;
+    intended_lane = trajectory_last.current_lane + 1;
   }
   else
   {
-    intended_lane = trajectory_last.lane;
+    intended_lane = trajectory_last.current_lane;
   }
 
   float distance_to_goal = MAX_S - trajectory_last.s;
-  int final_lane = trajectory_last.lane;
+  int final_lane = trajectory_last.current_lane;
   trajectory_data["intended_lane"] = intended_lane;
   trajectory_data["final_lane"] = final_lane;
   trajectory_data["distance_to_goal"] = distance_to_goal;
@@ -65,7 +65,7 @@ float lane_speed(const vector<Vehicle> &other_cars, int lane) // Integreate Sens
   {
     Vehicle car = other_cars[i];
 
-    if (car.lane == lane)
+    if (car.current_lane == lane)
     {
       return car.current_speed;
     }
@@ -82,7 +82,7 @@ float lane_speed(const vector<Vehicle> &other_cars, int lane) // Integreate Sens
 
 float goal_distance_cost(const Vehicle &vehicle,
                          const vector<Vehicle> &trajectory,
-                         const vector<Vehicle> &predictions,
+                         const vector<Vehicle> &other_cars,
                          map<string, int> &data)
 {
   // Cost increases based on distance of intended lane (for planning a lane
@@ -93,7 +93,7 @@ float goal_distance_cost(const Vehicle &vehicle,
   float distance = data["distance_to_goal"];
   if (distance > 0)
   {
-    cost = 1 - 2 * exp(-(abs(2.0 * vehicle.goal_lane - data["intended_lane"] - data["final_lane"]) / distance));
+    cost = 1 - 2 * exp(-(abs(2.0 * KEEP_IN_GOAL_LANE_ID - data["intended_lane"] - data["final_lane"]) / distance));
   }
   else
   {
@@ -140,7 +140,7 @@ float offroad_cost(const Vehicle &vehicle,
   // Cost penalize trajectories that are off the streed based on distance of intended lane (for planning a lane
   //   change) and final lane of trajectory..
   float cost;
-  if ((data["intended_lane"] <= vehicle.lane_max) && (data["intended_lane"] >= vehicle.lane_min))
+  if ((data["intended_lane"] <= RIGHT_LANE) && (data["intended_lane"] >= LEFT_LANE))
   {
     cost = 0;
   }
@@ -159,7 +159,7 @@ float change_lane_cost(const Vehicle &car,
   // Cost penalize trajectories that are change the lane. So that a lane change have to have a
   // see able impact
   float cost;
-  if (data["intended_lane"] != car.lane)
+  if (data["intended_lane"] != car.current_lane)
   {
     cost = 1;
   }
@@ -167,8 +167,8 @@ float change_lane_cost(const Vehicle &car,
   {
     cost = 0;
   }
-  std::cout << " lane change cost" << cost << std::endl;
   return cost;
+
 }
 
 float speedlimit_cost(const Vehicle &car,
@@ -179,7 +179,7 @@ float speedlimit_cost(const Vehicle &car,
   // Cost penalize trajectories that exeed speedlimit based on.
   float cost;
 
-  if ((data["intended_lane"] <= car.lane_max) && (data["intended_lane"] >= car.lane_min))
+  if ((data["intended_lane"] <= RIGHT_LANE) && (data["intended_lane"] >= LEFT_LANE))
   {
     cost = 0;
   }
@@ -187,7 +187,6 @@ float speedlimit_cost(const Vehicle &car,
   {
     cost = 1;
   }
-  std::cout << " speed limit cost" << cost << std::endl;
   return cost;
 }
 

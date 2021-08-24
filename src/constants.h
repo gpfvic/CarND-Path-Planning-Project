@@ -1,18 +1,29 @@
 #ifndef CONSTANTS
 #define CONSTANTS
 
-
 #define REACH_GOAL 10
 #define EFFICIENCY 1000
 #define OFFROAD 100000
 #define LANECHANGE 100
 #define MAX_S 6945.554 
 
+#define LANE_NUMBER 3
+#define FOLLOW_DISTANCE 8                // distance to keep behind leading cars
+
+#define LEFT_LANE 0
+#define MIDDLE_LANE 1
+#define RIGHT_LANE 2
+
+#define SPEED_LIMIT 49.6            // mph
+#define VELOCITY_INCREMENT_LIMIT 0.125
+
+#define KEEP_IN_GOAL_LANE_ID 1
+
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
 #define VEHICLE_RADIUS 1.25              // meters
-#define FOLLOW_DISTANCE 8.0              // distance to keep behind leading cars
 
 #define PREVIOUS_PATH_POINTS_TO_KEEP 25
 #define NUM_PATH_POINTS 50
@@ -28,8 +39,7 @@
 #define N_SAMPLES 20
 #define DT 0.20                         // seconds
 
-#define SPEED_LIMIT 22               // 22m/s , equal to 49.2mph 
-#define VELOCITY_INCREMENT_LIMIT 0.125
+
 
 // cost function weights
 #define COLLISION_COST_WEIGHT 99999
@@ -37,13 +47,7 @@
 #define IN_LANE_BUFFER_COST_WEIGHT 1000
 #define EFFICIENCY_COST_WEIGHT 10000
 #define NOT_MIDDLE_LANE_COST_WEIGHT 100
-// #define SPEED_LIMIT_COST_WEIGHT 9999
-// #define MAX_ACCEL_COST_WEIGHT 9999
-// #define AVG_ACCEL_COST_WEIGHT 1000
-// #define MAX_JERK_COST_WEIGHT 9999
-// #define AVG_JERK_COST_WEIGHT 1000
-// #define TIME_DIFF_COST_WEIGHT 10
-// #define TRAJ_DIFF_COST_WEIGHT 10
+
 
 // DEPRECATED CONSTANTS
 #define NUM_RANDOM_TRAJ_TO_GEN 4        // the number of perturbed trajectories to generate (for each perturbed duration)

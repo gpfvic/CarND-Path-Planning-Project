@@ -70,20 +70,15 @@ int main()
     // The 2 signifies a websocket event
     if (length && length > 2 && data[0] == '4' && data[1] == '2')
     {
-
       auto s = hasData(data);
-
       if (s != "")
       {
         auto j = json::parse(s);
-
         string event = j[0].get<string>();
-
         if (event == "telemetry")
         {
           // j[1] is the data JSON object
-
-          // Main car's localization Data
+          // ego car's localization Data
           double car_x = j[1]["x"];
           double car_y = j[1]["y"];
           double car_s = j[1]["s"];
@@ -117,7 +112,6 @@ int main()
             // Trajectory Planing
             // Create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
             // Later we will interpolate there waypoints with a spline and fill in with more points
-
             vector<double> ptsx;
             vector<double> ptsy;
 
@@ -160,17 +154,14 @@ int main()
               ptsy.push_back(ref_y);
             }
 
-            vector<Vehicle> predictions = check_other_vehicles_info_by_sensor_fusion(sensor_fusion, ego_car, prev_size);
-            vector<Vehicle> trajectory = ego_car.choose_next_state( predictions);
-            //LOGD << "Beginn Logging!" << trajectory[1];
-            std::cout << " Choose State " << trajectory[1].state << std::endl;
+            vector<Vehicle> other_cars = check_other_vehicles_info_by_sensor_fusion(sensor_fusion, ego_car, prev_size);
+            vector<Vehicle> trajectory = ego_car.choose_next_state(other_cars);
 
             ego_car.realize_next_state(trajectory);
-            //cout << "car.s                         " << car.s << " " << endl;
 
-            vector<double> next_wp0 = getXY(ego_car.s + 40, (2 + 4 * ego_car.lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            vector<double> next_wp1 = getXY(ego_car.s + 80, (2 + 4 * ego_car.lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            vector<double> next_wp2 = getXY(ego_car.s + 120, (2 + 4 * ego_car.lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            vector<double> next_wp0 = getXY(ego_car.s+40, (2+4*ego_car.current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            vector<double> next_wp1 = getXY(ego_car.s+80, (2+4*ego_car.current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            vector<double> next_wp2 = getXY(ego_car.s+120, (2+4* ego_car.current_lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
             ptsx.push_back(next_wp0[0]);
             ptsx.push_back(next_wp1[0]);
@@ -203,7 +194,6 @@ int main()
             // Start with all of the previous path points from last time
             for (int i = 0; i < previous_path_x.size(); i++)
             {
-
               next_x_vals.push_back(previous_path_x[i]);
               next_y_vals.push_back(previous_path_y[i]);
             }
@@ -219,7 +209,7 @@ int main()
 
             for (int i = 1; i <= 50 - previous_path_x.size(); i++)
             {
-              double N = (target_dist / (.02 * ego_car.current_speed / 2.24)); // .02 is the update time  2.24 from mph need to be in m/s
+              double N = (target_dist / (.02*ego_car.current_speed/2.24)); // .02 is the update time  2.24 from mph need to be in m/s
               double x_point = x_add_on + (target_x) / N;
               double y_point = s(x_point);
 
