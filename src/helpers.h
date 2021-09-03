@@ -14,6 +14,12 @@ using namespace std;
 using std::string;
 using std::vector;
 
+struct Trajectory{
+  vector<double> s; //size = 6
+  vector<double> d;
+  double t; //time
+}
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 //   else the empty string "" will be returned.
@@ -191,6 +197,90 @@ vector<Vehicle> check_other_vehicles_info_by_sensor_fusion(const vector<vector<d
     return other_cars;
 }
 
-  
+
+double logistic(x):{
+  /*
+    A function that returns a value between 0 and 1 for x in the 
+    range [0, infinity] and -1 to 1 for x in the range [-infinity, infinity].
+
+    Useful for cost functions.
+  */
+  return 2.0 / (1+exp(-x)) -1.0;
+}
+
+double calculate_current_position_shifting(double t, vector<double> coefficients){
+  /*
+    Takes the coefficients of a polynomial and creates a function of
+    time from them. Then calculate.
+  */
+  double total = 0.0;
+  for (int i=0; i<coefficients.size();i++){
+    total += coefficients[i] * pow(t, i);
+  }
+  return total;
+}
+
+vector<double> differentiate(vector<double> coefficients){
+  /* 
+    Calculates the derivative of a polynomial and returns
+    the corresponding coefficients.
+   */
+  vector<double> new_cos;
+  for(int deg=0;deg<coefficients.size()-1;deg++){
+    new_cos.push_back( (deg+1)* coefficients[deg+1]);
+  }
+  return new_cos;
+}
+
+double nearest_approach_to_any_vehicle(Trajectory traj, map<int,Vehicle> predictions){
+  /* 
+    Calculates the closest distance to any vehicle during a trajectory.
+   */
+  double closest = 9999999;
+  for(int i=0;i<predictions.size();i++){
+    dist = nearest_approach(traj, predictions[i]);
+    if(dist<closest){
+      closest = dist;
+    }
+  }
+  return closest;
+}
+
+
+
+double nearest_approach(Trajectory traj, Vehicle vehicle){
+  double closest = 999999;
+  vector<double> s_ = traj.s;
+  vector<double> d_ = traj.d;
+  double T = traj.t;
+
+  for (int i=0;i<100;i++){
+    t = float(i)/100 * T;
+    cur_s = calculate_current_position_shifting(t, s_);
+    cur_d = calculate_current_position_shifting(t, d_);
+    vector<double> state = vehicle.state_in(t);
+    double trag_s = state[0];
+    double targ_d = state[3];
+    dist = sqrt(pow(cur_s-trag_s, 2) + pow(cur_d-trag_d, 2));
+    if(dist<closest){
+      closest = dist;
+    }
+  }
+  return closest;
+}
+
+
+
+vector<double> get_f_and_N_derivatives(double t, vector<double> coefficients, double N){
+  vector<double> S;
+  S.push_back(calculate_current_position_shifting(t,coefficients));
+  for(int i=0; i<N;i++){
+    coefficients =  differentiate(coefficients);
+    S.push_back(calculate_current_position_shifting(t,coefficients));
+  }
+  return S;
+}
+
+
 
 #endif  // HELPERS_H

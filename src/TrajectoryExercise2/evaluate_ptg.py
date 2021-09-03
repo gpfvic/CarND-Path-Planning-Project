@@ -10,7 +10,7 @@ def main():
 	predictions = {0: vehicle}
 	target = 0  # is the id of the predictions cars,here is just one car
 	delta = [-10, 0, 0, 0, 0, 0] # the delta value of [s, s_dot, s_ddot, d, d_dot, d_ddot]
-	start_s = [10, 10, 0]
+	start_s = [10, 10, 0] # [s, s_dot, s_ddot
 	start_d = [4, 0, 0]
 	T = 5.0  # T - the duration of maneuver in seconds.
 	best = PTG(start_s, start_d, target, delta, T, predictions)
