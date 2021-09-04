@@ -19,7 +19,7 @@ WEIGHTED_COST_FUNCTIONS = [
 
 # abs(acc*dt) is the velocity increment in dt
 # total_acc is the average acceleration in time T, 
-# so the cumulative sum of the velocity increments di vided by T, 
+# so the cumulative sum of the velocity increments divided by T, 
 # that is acc=dV/T
 
 def PTG(start_s, start_d, target_vehicle, delta, T, predictions):
