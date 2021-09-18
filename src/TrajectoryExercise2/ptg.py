@@ -12,8 +12,8 @@ WEIGHTED_COST_FUNCTIONS = [
     (max_jerk_cost,     100),
     (total_jerk_cost,   10),
     (collision_cost,    100),   
-    (max_accel_cost,    3),
-    (total_accel_cost,  1),
+    (max_accel_cost,    10),
+    (total_accel_cost,  110),
 ]
 
 
@@ -72,7 +72,7 @@ def PTG(start_s, start_d, target_vehicle, delta, T, predictions):
     trajectories = []
     for goal in all_goals:
         s_goal, d_goal, t = goal
-        s_coefficients = JMT(start_s, s_goal, t)
+        s_coefficients = JMT(start_s, s_goal, t) # [init_s, init_v,init_accel, final_s, final_v, final_accel]
         d_coefficients = JMT(start_d, d_goal, t)
         trajectories.append(tuple([s_coefficients, d_coefficients, t]))
     

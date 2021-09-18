@@ -14,6 +14,7 @@ def main():
 	start_d = [4, 0, 0]
 	T = 5.0  # T - the duration of maneuver in seconds.
 	best = PTG(start_s, start_d, target, delta, T, predictions)
+	print(best)
 	show_trajectory(best[0], best[1], best[2], vehicle)
 
 if __name__ == "__main__":
