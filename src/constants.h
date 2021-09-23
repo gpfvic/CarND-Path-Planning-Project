@@ -5,24 +5,28 @@
 #define MAX_S 6945.554
 
 // cost function weights
-#define TIME_DIFF_COST        10
-#define S_DIFF_COST           100
-#define D_DIFF_COST           100
-#define EFFICIENCY_COST       10
-#define MAX_JERK_COST         100
-#define TOTAL_JERK_COST       10
-#define COLLISION_COST        1000
-#define MAX_ACCEL_COST        3
+#define TIME_DIFF_COST        1
+#define S_DIFF_COST           1
+#define D_DIFF_COST           2
+#define BUFFER_COST           10
+#define STAY_IN_LANE_COST     1
+#define EFFICIENCY_COST       0
+#define MAX_JERK_COST         1
+#define TOTAL_JERK_COST       1
+#define COLLISION_COST        100
+#define MAX_ACCEL_COST        1
 #define TOTAL_ACCEL_COST      1
+#define OUT_LANE_COST         2
 
 
-#define VEHICLE_RADIUS 1.5               // meters
+#define VEHICLE_RADIUS 1.25            // meters
 #define FOLLOW_DISTANCE 8.0              // distance to keep behind leading cars
+#define SAFETY_DISTANCE 16.0
 
 
 // constants
-const vector<double> SIGMA_S = {10.0, 4.0, 2.0}; // s, s_dot, s_double_dot
-const vector<double> SIGMA_D = {1.0, 1.0, 1.0};
+const vector<double> SIGMA_S = {10.0, 3.0, 2.0}; // s, s_dot, s_double_dot
+const vector<double> SIGMA_D = {1.0,  1.0, 1.0};
 
 
 #define MAX_JERK  10 // m/s/s/s
@@ -44,7 +48,8 @@ const vector<double> SIGMA_D = {1.0, 1.0, 1.0};
 #define DT 0.20                         // seconds
 
 #define SPEED_LIMIT 21.5                // m/s
-#define VELOCITY_INCREMENT_LIMIT 0.125
+#define VELOCITY_INCREMENT_LIMIT 0.1
+#define VELOCITY_SLOW_DOWN_EACH_STEP  3 // m/s
 
 #define MAX_INSTANTANEOUS_ACCEL 10      // m/s/s
 

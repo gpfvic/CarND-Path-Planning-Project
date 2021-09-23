@@ -113,8 +113,8 @@ int main()
                       double car_speed = j[1]["speed"];
                       car_speed *= 0.44704; // convert mph to m/s
 
+                      printf("\n\n\n");
                       cout<<"#DEBUG######################################"<<endl;
-                      cout<<"0.   x="<<car_x<<", y="<<car_y<<", s="<<car_s<<", d="<<car_d<<", yaw="<<car_yaw<<endl;
 
                       // Previous path data given to the Planner
                       auto previous_path_x = j[1]["previous_path_x"];
@@ -198,7 +198,8 @@ int main()
                           pos_x3, pos_y3, vel_x2, vel_y2, acc_x, acc_y;
 
                       int subpath_size = min(PREVIOUS_PATH_POINTS_TO_KEEP, (int)previous_path_x.size());
-                      cout<<"subpath_size = "<<subpath_size<<"  "<<previous_path_x.size()<<endl;
+                      
+                      double traj_start_time = subpath_size * PATH_DT;
 
                       // use default values if not enough previous path points
                       if (subpath_size < 4)
@@ -221,8 +222,6 @@ int main()
 												pos_x2 = previous_path_x[subpath_size - 2];
 												pos_y2 = previous_path_y[subpath_size - 2];
 												angle = atan2(pos_y - pos_y2, pos_x - pos_x2);
-                        cout<<pos_x<<"\t"<<pos_y<<"\t"<<pos_x2<<"\t"<<pos_y2<<endl;
-                        cout<<">4  angle = "<<angle<<endl;
 												vector<double> frenet = getFrenet(pos_x, pos_y, angle, interpolated_waypoints_x, interpolated_waypoints_y, interpolated_waypoints_s);
                         pos_s = frenet[0];
                         pos_d = frenet[1];
@@ -263,63 +262,102 @@ int main()
                       ego_car.d = pos_d;     // d position
                       ego_car.d_d = d_dot;   // d dot - velocity in d
                       ego_car.d_dd = d_ddot; // d dot-dot - acceleration in d
+                      // for cold start
+                      if(d_ddot > 9){
+                        ego_car.d_dd = 9;
+                      }else if(d_ddot <-9){
+                        ego_car.d_dd = -9;
+                      }
+                      
 
                       // ********************* GENERATE PREDICTIONS FROM SENSOR FUSION DATA **************************
-                      // The data format for each car is: [ id, x, y, vx, vy, s, d]. The id is a unique identifier for that car. The x, y values are in global map coordinates, and the vx, vy values are the velocity components, also in reference to the global map. Finally s and d are the Frenet coordinates for that car.
+                      // The data format for each car is: [ id, x, y, vx, vy, s, d]. The id is a unique identifier for that car. 
+                      //The x, y values are in global map coordinates, and the vx, vy values are the velocity components, also in reference to the global map. 
+                      // Finally s and d are the Frenet coordinates for that car.
                       double duration = N_SAMPLES * DT - subpath_size * PATH_DT;
+
                       vector<Vehicle> other_cars;
                       map<int, Vehicle> predictions;
                       for (auto sf : sensor_fusion)
                       {
                         double other_car_vel = sqrt(pow((double)sf[3], 2) + pow((double)sf[4], 2));
                         Vehicle other_car = Vehicle(sf[5], other_car_vel, 0, sf[6], 0, 0);
+                        other_car.traj_start_time = 0.5;
                         other_cars.push_back(other_car);
                       }
 
                       // Add a little ADAS-like warning system - if any other car is immediately to left or right, set a
                       // flag to be used for hard limiting available states (i.e. if there is a car to the left, prevent
                       // Lane Change Left as an available state)
-                      bool car_to_left = false, car_to_right = false, car_just_ahead = false;
+                      bool car_turning_left = false, car_turning_right = false, car_just_ahead = false;
+                      bool car_ahead_in_the_left_lane = false;
+                      bool car_ahead_in_the_right_lane = false;
                       for (Vehicle other_car : other_cars)
                       {
                         double s_diff = fabs(other_car.s - car_s);
                         if (s_diff < FOLLOW_DISTANCE)
                         {
-                          cout << "s diff: " << s_diff << endl;
                           double d_diff = other_car.d - car_d;
                           if (d_diff > 2 && d_diff < 6)
                           {
-                            car_to_right = true;
+                            car_turning_right = true;
                           }
                           else if (d_diff < -2 && d_diff > -6)
                           {
-                            car_to_left = true;
+                            car_turning_left = true;
                           }
                           else if (d_diff > -2 && d_diff < 2)
                           {
                             car_just_ahead = true;
                           }
                         }
+                        // 处理前方两辆车并排
+                        s_diff = other_car.s - car_s;
+                        double d_diff = other_car.d - car_d;
+                        if(s_diff < SAFETY_DISTANCE && s_diff > 0 && fabs(d_diff)<6){
+                          if (d_diff > 2 && d_diff < 6)
+                          {
+                            car_ahead_in_the_right_lane = true;
+                          }
+                          else if (d_diff < -2 && d_diff > -6)
+                          {
+                            car_ahead_in_the_left_lane = true;
+                          }
+                          cout<<"s_diff = "<<s_diff<<"\t d_diff = "<<d_diff<<"\t["<<car_ahead_in_the_left_lane<<", "<<car_ahead_in_the_right_lane<<"]"<<endl;
+                        }
+
+                        // 邻车突然靠近
+                        s_diff = fabs(other_car.s - car_s);
+                        d_diff = fabs(other_car.d - car_d);
+                        if(s_diff <= 1.2*VEHICLE_RADIUS && d_diff<1.2*VEHICLE_RADIUS){
+                          car_just_ahead = true; //速度降为0
+                        }
+
                       }
-                      ego_car.update_available_states(car_to_left, car_to_right);
+                      ego_car.update_available_states(car_turning_left, car_turning_right, car_just_ahead, car_ahead_in_the_right_lane,car_ahead_in_the_left_lane);
 
                       // ******************************* DETERMINE BEST TRAJECTORY ***********************************
                       // where the magic happens? NOPE! I WISH - THIS APPORACH HAS BEEN ABANDONED
                       // trajectories come back in a list of s values and a list of d values (not zipped together)
                       // duration for trajectory is variable, depending on number of previous points used
-                      // vector<vector<double>> frenet_traj = my_car.get_best_frenet_trajectory(predictions, duration);
-                      // vector<double> traj_xy_point, best_x_traj, best_y_traj, interpolated_x_traj, interpolated_y_traj;
 
                       Trajectory best_frenet_traj;
                       vector<double> best_target;
                       double best_cost = 999999;
                       string best_traj_state = "";
+
                       for (string state : ego_car.available_states)
                       {
                         // TODO
+                        printf("\n");
+                        cout<<"STATE:\t"<<state<<endl;
+                        
                         // {{target_s, target_s_d, target_s_dd , target_d, target_d_d, target_d_dd}};
-                        vector<double> target_state = ego_car.get_target_for_state(state, other_cars, duration, car_just_ahead);
-                        // <<s,d>,<s,d>,...>
+                        vector<double> target_state = ego_car.get_target_for_state(state, other_cars, traj_start_time, duration, car_just_ahead);
+                        ego_car.target_state = target_state;
+                        // cout<<"CURRENT State: ["<<ego_car.s<<", "<<ego_car.s_d<<", "<<ego_car.s_dd<<", "<<ego_car.d<<", "<<ego_car.d_d<<", "<<ego_car.d_dd<<"]"<<endl;
+                        // cout<<"Target  State: ["<<target_state[0]<<", "<<target_state[1]<<", "<<target_state[2]<<", "<<target_state[3]<<", "<<target_state[4]<<", "<<target_state[5]<<"]"<<endl;
+                        
                         Trajectory possible_traj = ego_car.generate_traj_for_target(target_state, duration);
 
                         double current_cost = calculate_total_cost(possible_traj, ego_car, duration, other_cars);
@@ -330,7 +368,13 @@ int main()
                           best_traj_state = state;
                           best_target = target_state;
                         }
+                        cout<<"CURRENT_COST = "<<current_cost<<endl;
                       }
+                      printf("\n---------------\n");
+                      cout<<"BEST STATE: "<<best_traj_state<<endl;
+                      // cout<< "BEST Traj: ["<<best_target[0]<<","<<best_target[1]<<","<<best_target[2]<<","<<best_target[3]<<","<<best_target[4]<<","<<best_target[5]<<"]"<<endl;
+
+
 
                       // ********************* PRODUCE NEW PATH ***********************
                       // begin by pushing the last and next-to-last point from the previous path for setting the
@@ -377,14 +421,26 @@ int main()
                       coarse_x_traj.push_back(target_x1);
                       coarse_y_traj.push_back(target_y1);
 
-                      double target_s2 = target_s1 + 30;
-                      double target_d2 = target_d1;
+                      double target_s2 = pos_s + 60;
+                      double target_d2 = best_target[3];
                       vector<double> target_xy2 = getXY(target_s2, target_d2, interpolated_waypoints_s, interpolated_waypoints_x, interpolated_waypoints_y);
                       double target_x2 = target_xy2[0];
                       double target_y2 = target_xy2[1];
                       coarse_s_traj.push_back(target_s2);
                       coarse_x_traj.push_back(target_x2);
                       coarse_y_traj.push_back(target_y2);
+
+                      double target_s3 = pos_s + 90;
+                      double target_d3 = best_target[3];
+                      vector<double> target_xy3 = getXY(target_s3, target_d3, interpolated_waypoints_s, interpolated_waypoints_x, interpolated_waypoints_y);
+                      double target_x3 = target_xy3[0];
+                      double target_y3 = target_xy3[1];
+                      coarse_s_traj.push_back(target_s3);
+                      coarse_x_traj.push_back(target_x3);
+                      coarse_y_traj.push_back(target_y3);
+
+                      // cout<<"*** TARGET S = "<<best_target[0]<<"\t current_s = "<<ego_car.s<<"\t target_s1 = "<<target_s1<<"\t\t target_s2 ="<<target_s2<<endl;
+                      // cout<<"*** TARGET D = "<<best_target[3]<<"\t current_d = "<<ego_car.d<<"\t target_d1 = "<<target_d1<<"\t\t target_d2 = "<<target_d2<<endl;
 
                       //next s values
                       double target_s_dot = best_target[1];

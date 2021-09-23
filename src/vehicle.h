@@ -15,6 +15,7 @@ struct Trajectory
   // s(t) = a_0 + a_1 * t + a_2 * t**2 + a_3 * t**3 + a_4 * t**4 + a_5 * t**5
   vector<double> s; 
   vector<double> d; 
+  vector<double> target_state;
   double t; //time
 };
 
@@ -31,7 +32,9 @@ public:
   string state; 
   vector<string> available_states;
   vector<double> start_state; // [s, s_d, s_dd, d, d_d,d_dd]
+  vector<double> target_state;
   vector<double> s_traj_coeffs, d_traj_coeffs;
+  double traj_start_time;
 
   /**
   * Constructors
@@ -47,11 +50,11 @@ public:
 
   vector<double> state_in(double time);
 
-  void update_available_states(bool car_to_left, bool car_to_right);
+  void update_available_states(bool car_to_left, bool car_to_right, bool car_just_ahead, bool car_ahead_in_the_right_lane,bool car_ahead_in_the_left_lane);
 
-  vector<double> get_target_for_state(string state, vector<Vehicle> other_cars, double duration, bool car_just_ahead);
+  vector<double> get_target_for_state(string state, vector<Vehicle> other_cars, double traj_start_time, double duration, bool car_just_ahead);
 
-  vector<double> get_leading_vehicle_data_for_lane(int target_lane, vector<Vehicle> other_cars, double duration);
+  vector<double> get_leading_vehicle_data_for_lane(int target_lane, vector<Vehicle> other_cars, double traj_start_time, double duration);
 
   Trajectory generate_traj_for_target(vector<double> target_state, double duration);
 

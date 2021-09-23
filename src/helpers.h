@@ -1,6 +1,7 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -20,7 +21,6 @@ using namespace std;
 using std::string;
 using std::vector;
 
-
 // Calculate distance between two points
 static double distance(double x1, double y1, double x2, double y2)
 {
@@ -29,7 +29,7 @@ static double distance(double x1, double y1, double x2, double y2)
 
 // Calculate closest waypoint to current x, y position
 static int ClosestWaypoint(double x, double y, const vector<double> &maps_x,
-                    const vector<double> &maps_y)
+                           const vector<double> &maps_y)
 {
   double closestLen = 100000; //large number
   int closestWaypoint = 0;
@@ -51,7 +51,7 @@ static int ClosestWaypoint(double x, double y, const vector<double> &maps_x,
 
 // Returns next waypoint of the closest waypoint
 static int NextWaypoint(double x, double y, double theta, const vector<double> &maps_x,
-                 const vector<double> &maps_y)
+                        const vector<double> &maps_y)
 {
   int closestWaypoint = ClosestWaypoint(x, y, maps_x, maps_y);
 
@@ -77,9 +77,9 @@ static int NextWaypoint(double x, double y, double theta, const vector<double> &
 
 // Transform from Cartesian x,y coordinates to Frenet s,d coordinates
 static vector<double> getFrenet(double x, double y, double theta,
-                         const vector<double> &maps_x,
-                         const vector<double> &maps_y,
-                         vector<double> maps_s)
+                                const vector<double> &maps_x,
+                                const vector<double> &maps_y,
+                                vector<double> maps_s)
 {
   int next_wp = NextWaypoint(x, y, theta, maps_x, maps_y);
 
@@ -127,8 +127,8 @@ static vector<double> getFrenet(double x, double y, double theta,
 
 // Transform from Frenet s,d coordinates to Cartesian x,y
 static vector<double> getXY(double s, double d, const vector<double> &maps_s,
-                     const vector<double> &maps_x,
-                     const vector<double> &maps_y)
+                            const vector<double> &maps_x,
+                            const vector<double> &maps_y)
 {
   int prev_wp = -1;
 
@@ -199,11 +199,10 @@ static double nearest_approach(Trajectory traj, Vehicle car)
   double closest = 999999;
   vector<double> s_ = traj.s;
   vector<double> d_ = traj.d;
-  double T = traj.t;
 
   for (int i = 0; i < 100; i++)
   {
-    double t = float(i) / 100 * T;
+    double t = float(i) / 100 * (traj.t+ car.traj_start_time);
     double cur_s = to_equation(t, s_);
     double cur_d = to_equation(t, d_);
     vector<double> state = car.state_in(t);
@@ -269,7 +268,7 @@ static vector<double> jmt(vector<double> start, vector<double> end, double T)
   double T5 = T4 * T;
 
   a << T3, T4, T5,
-      3 * T2, 4 * T3, 5 * T3,
+      3 * T2, 4 * T3, 5 * T4,
       6 * T, 12 * T2, 20 * T3;
   MatrixXd aInv = a.inverse();
 
@@ -316,6 +315,5 @@ static vector<double> interpolate_points(vector<double> ptsx, vector<double> pts
   }
   return output;
 }
-
 
 #endif // HELPERS_H
