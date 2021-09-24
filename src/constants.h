@@ -5,23 +5,24 @@
 #define MAX_S 6945.554
 
 // cost function weights
-#define TIME_DIFF_COST        1
+#define TIME_DIFF_COST        0.6
 #define S_DIFF_COST           1
-#define D_DIFF_COST           2
-#define BUFFER_COST           10
+#define D_DIFF_COST           1.6
+#define BUFFER_COST           20
 #define STAY_IN_LANE_COST     1
-#define EFFICIENCY_COST       0
+#define EFFICIENCY_COST       20
 #define MAX_JERK_COST         1
 #define TOTAL_JERK_COST       1
 #define COLLISION_COST        100
 #define MAX_ACCEL_COST        1
 #define TOTAL_ACCEL_COST      1
-#define OUT_LANE_COST         2
+#define OUT_LANE_COST         0.3
+#define NOT_IN_MIDDLE_LANE_COST 1.3
 
 
 #define VEHICLE_RADIUS 1.25            // meters
 #define FOLLOW_DISTANCE 8.0              // distance to keep behind leading cars
-#define SAFETY_DISTANCE 16.0
+#define SAFETY_DISTANCE 10.0
 
 
 // constants

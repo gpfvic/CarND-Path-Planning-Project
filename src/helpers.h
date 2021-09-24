@@ -200,9 +200,9 @@ static double nearest_approach(Trajectory traj, Vehicle car)
   vector<double> s_ = traj.s;
   vector<double> d_ = traj.d;
 
-  for (int i = 0; i < 100; i++)
+  for (int i = 0; i < 50; i++)
   {
-    double t = float(i) / 100 * (traj.t+ car.traj_start_time);
+    double t = float(i) / 50 * (traj.t+ car.traj_start_time);
     double cur_s = to_equation(t, s_);
     double cur_d = to_equation(t, d_);
     vector<double> state = car.state_in(t);

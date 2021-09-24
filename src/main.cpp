@@ -140,11 +140,11 @@ int main()
                       // ********************* CONSTRUCT INTERPOLATED WAYPOINTS OF NEARBY AREA **********************
                       int num_waypoints = map_waypoints_x.size();
                       int next_waypoint_index = NextWaypoint(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
-                      vector<double> coarse_waypoints_s,
-                          coarse_waypoints_x,
-                          coarse_waypoints_y,
-                          coarse_waypoints_dx,
-                          coarse_waypoints_dy;
+                      vector<double> reference_waypoints_s,
+                          reference_waypoints_x,
+                          reference_waypoints_y,
+                          reference_waypoints_dx,
+                          reference_waypoints_dy;
 
                       for (int i = -NUM_WAYPOINTS_BEHIND; i < NUM_WAYPOINTS_AHEAD; i++)
                       {
@@ -163,32 +163,32 @@ int main()
                         {
                           current_s = current_s + MAX_S;
                         }
-                        coarse_waypoints_s.push_back(current_s);
-                        coarse_waypoints_x.push_back(map_waypoints_x[idx]);
-                        coarse_waypoints_y.push_back(map_waypoints_y[idx]);
-                        coarse_waypoints_dx.push_back(map_waypoints_dx[idx]);
-                        coarse_waypoints_dy.push_back(map_waypoints_dy[idx]);
+                        reference_waypoints_s.push_back(current_s);
+                        reference_waypoints_x.push_back(map_waypoints_x[idx]);
+                        reference_waypoints_y.push_back(map_waypoints_y[idx]);
+                        reference_waypoints_dx.push_back(map_waypoints_dx[idx]);
+                        reference_waypoints_dy.push_back(map_waypoints_dy[idx]);
                       }
 
                       // interpolation parameters
                       double dist_inc = 0.5; // meters
-                      int num_interpolation_points = (coarse_waypoints_s[coarse_waypoints_s.size() - 1] - coarse_waypoints_s[0]) / dist_inc;
+                      int num_interpolation_points = (reference_waypoints_s[reference_waypoints_s.size() - 1] - reference_waypoints_s[0]) / dist_inc;
                       vector<double> interpolated_waypoints_s,
                           interpolated_waypoints_x,
                           interpolated_waypoints_y,
                           interpolated_waypoints_dx,
                           interpolated_waypoints_dy;
 
-                      interpolated_waypoints_s.push_back(coarse_waypoints_s[0]);
+                      interpolated_waypoints_s.push_back(reference_waypoints_s[0]);
                       for (int i = 1; i < num_interpolation_points; i++)
                       {
-                        interpolated_waypoints_s.push_back(coarse_waypoints_s[0] + i * dist_inc);
+                        interpolated_waypoints_s.push_back(reference_waypoints_s[0] + i * dist_inc);
                       }
 
-                      interpolated_waypoints_x = interpolate_points(coarse_waypoints_s, coarse_waypoints_x, dist_inc, num_interpolation_points);
-                      interpolated_waypoints_y = interpolate_points(coarse_waypoints_s, coarse_waypoints_y, dist_inc, num_interpolation_points);
-                      interpolated_waypoints_dx = interpolate_points(coarse_waypoints_s, coarse_waypoints_dx, dist_inc, num_interpolation_points);
-                      interpolated_waypoints_dy = interpolate_points(coarse_waypoints_s, coarse_waypoints_dy, dist_inc, num_interpolation_points);
+                      interpolated_waypoints_x = interpolate_points(reference_waypoints_s, reference_waypoints_x, dist_inc, num_interpolation_points);
+                      interpolated_waypoints_y = interpolate_points(reference_waypoints_s, reference_waypoints_y, dist_inc, num_interpolation_points);
+                      interpolated_waypoints_dx = interpolate_points(reference_waypoints_s, reference_waypoints_dx, dist_inc, num_interpolation_points);
+                      interpolated_waypoints_dy = interpolate_points(reference_waypoints_s, reference_waypoints_dy, dist_inc, num_interpolation_points);
 
                       // **************** DETERMINE EGO CAR PARAMETERS AND CONSTRUCT VEHICLE OBJECT ******************
                       // Vehicle class requires s,s_d,s_dd,d,d_d,d_dd - in that order
@@ -286,9 +286,9 @@ int main()
                         other_cars.push_back(other_car);
                       }
 
-                      // Add a little ADAS-like warning system - if any other car is immediately to left or right, set a
-                      // flag to be used for hard limiting available states (i.e. if there is a car to the left, prevent
-                      // Lane Change Left as an available state)
+                      // finite state machine
+                      // sense the other cars information, then to change the ego car's state
+                      // to turn left , or right, or just keep in lane
                       bool car_turning_left = false, car_turning_right = false, car_just_ahead = false;
                       bool car_ahead_in_the_left_lane = false;
                       bool car_ahead_in_the_right_lane = false;
@@ -311,7 +311,7 @@ int main()
                             car_just_ahead = true;
                           }
                         }
-                        // 处理前方两辆车并排
+                        // deal with there is two car just with same d ahead
                         s_diff = other_car.s - car_s;
                         double d_diff = other_car.d - car_d;
                         if(s_diff < SAFETY_DISTANCE && s_diff > 0 && fabs(d_diff)<6){
@@ -326,21 +326,17 @@ int main()
                           cout<<"s_diff = "<<s_diff<<"\t d_diff = "<<d_diff<<"\t["<<car_ahead_in_the_left_lane<<", "<<car_ahead_in_the_right_lane<<"]"<<endl;
                         }
 
-                        // 邻车突然靠近
+                        // in case other car rush into ego car suddenly
                         s_diff = fabs(other_car.s - car_s);
                         d_diff = fabs(other_car.d - car_d);
                         if(s_diff <= 1.2*VEHICLE_RADIUS && d_diff<1.2*VEHICLE_RADIUS){
-                          car_just_ahead = true; //速度降为0
+                          car_just_ahead = true; // speed to 0
                         }
 
                       }
                       ego_car.update_available_states(car_turning_left, car_turning_right, car_just_ahead, car_ahead_in_the_right_lane,car_ahead_in_the_left_lane);
 
                       // ******************************* DETERMINE BEST TRAJECTORY ***********************************
-                      // where the magic happens? NOPE! I WISH - THIS APPORACH HAS BEEN ABANDONED
-                      // trajectories come back in a list of s values and a list of d values (not zipped together)
-                      // duration for trajectory is variable, depending on number of previous points used
-
                       Trajectory best_frenet_traj;
                       vector<double> best_target;
                       double best_cost = 999999;
@@ -355,8 +351,8 @@ int main()
                         // {{target_s, target_s_d, target_s_dd , target_d, target_d_d, target_d_dd}};
                         vector<double> target_state = ego_car.get_target_for_state(state, other_cars, traj_start_time, duration, car_just_ahead);
                         ego_car.target_state = target_state;
-                        // cout<<"CURRENT State: ["<<ego_car.s<<", "<<ego_car.s_d<<", "<<ego_car.s_dd<<", "<<ego_car.d<<", "<<ego_car.d_d<<", "<<ego_car.d_dd<<"]"<<endl;
-                        // cout<<"Target  State: ["<<target_state[0]<<", "<<target_state[1]<<", "<<target_state[2]<<", "<<target_state[3]<<", "<<target_state[4]<<", "<<target_state[5]<<"]"<<endl;
+                        cout<<"CURRENT State: ["<<ego_car.s<<", "<<ego_car.s_d<<", "<<ego_car.s_dd<<", "<<ego_car.d<<", "<<ego_car.d_d<<", "<<ego_car.d_dd<<"]"<<endl;
+                        cout<<"TARGET  State: ["<<target_state[0]<<", "<<target_state[1]<<", "<<target_state[2]<<", "<<target_state[3]<<", "<<target_state[4]<<", "<<target_state[5]<<"]"<<endl;
                         
                         Trajectory possible_traj = ego_car.generate_traj_for_target(target_state, duration);
 
@@ -378,66 +374,65 @@ int main()
 
                       // ********************* PRODUCE NEW PATH ***********************
                       // begin by pushing the last and next-to-last point from the previous path for setting the
-                      // spline the last point should be the first point in the returned trajectory, but because of
-                      // imprecision, also add that point manually
-                      vector<double> coarse_s_traj;
-                      vector<double> coarse_x_traj;
-                      vector<double> coarse_y_traj;
+                      // spline the last point should be the first point in the returned trajectory
+                      vector<double> reference_s_traj;
+                      vector<double> reference_x_traj;
+                      vector<double> reference_y_traj;
                       vector<double> interpolated_s_traj;
                       vector<double> interpolated_x_traj;
                       vector<double> interpolated_y_traj;
 
                       double prev_s = pos_s - s_dot * PATH_DT;
-                      // first two points of coarse trajectory, to ensure spline begins smoothly
+                      // first two points of reference trajectory, to ensure spline begins smoothly
                       if (subpath_size >= 2)
                       {
-                        coarse_s_traj.push_back(prev_s);
-                        coarse_x_traj.push_back(previous_path_x[subpath_size - 2]);
-                        coarse_y_traj.push_back(previous_path_y[subpath_size - 2]);
-                        coarse_s_traj.push_back(pos_s);
-                        coarse_x_traj.push_back(previous_path_x[subpath_size - 1]);
-                        coarse_y_traj.push_back(previous_path_y[subpath_size - 1]);
+                        reference_s_traj.push_back(prev_s);
+                        reference_x_traj.push_back(previous_path_x[subpath_size - 2]);
+                        reference_y_traj.push_back(previous_path_y[subpath_size - 2]);
+                        reference_s_traj.push_back(pos_s);
+                        reference_x_traj.push_back(previous_path_x[subpath_size - 1]);
+                        reference_y_traj.push_back(previous_path_y[subpath_size - 1]);
                       }
                       else
                       {
                         double prev_s = pos_s - 1;
                         double prev_x = pos_x - cos(angle);
                         double prev_y = pos_y - sin(angle);
-                        coarse_s_traj.push_back(prev_s);
-                        coarse_x_traj.push_back(prev_x);
-                        coarse_y_traj.push_back(prev_y);
-                        coarse_s_traj.push_back(pos_s);
-                        coarse_x_traj.push_back(pos_x);
-                        coarse_y_traj.push_back(pos_y);
+                        reference_s_traj.push_back(prev_s);
+                        reference_x_traj.push_back(prev_x);
+                        reference_y_traj.push_back(prev_y);
+                        reference_s_traj.push_back(pos_s);
+                        reference_x_traj.push_back(pos_x);
+                        reference_y_traj.push_back(pos_y);
                       }
 
-                      // last two points of coarse trajectory, use target_d and current s + 30,60
+                      // last two points of reference trajectory, use target_d and current s + 30,60
                       double target_s1 = pos_s + 30;
                       double target_d1 = best_target[3];
                       vector<double> target_xy1 = getXY(target_s1, target_d1, interpolated_waypoints_s, interpolated_waypoints_x, interpolated_waypoints_y);
                       double target_x1 = target_xy1[0];
                       double target_y1 = target_xy1[1];
-                      coarse_s_traj.push_back(target_s1);
-                      coarse_x_traj.push_back(target_x1);
-                      coarse_y_traj.push_back(target_y1);
+                      reference_s_traj.push_back(target_s1);
+                      reference_x_traj.push_back(target_x1);
+                      reference_y_traj.push_back(target_y1);
 
                       double target_s2 = pos_s + 60;
                       double target_d2 = best_target[3];
                       vector<double> target_xy2 = getXY(target_s2, target_d2, interpolated_waypoints_s, interpolated_waypoints_x, interpolated_waypoints_y);
                       double target_x2 = target_xy2[0];
                       double target_y2 = target_xy2[1];
-                      coarse_s_traj.push_back(target_s2);
-                      coarse_x_traj.push_back(target_x2);
-                      coarse_y_traj.push_back(target_y2);
+                      reference_s_traj.push_back(target_s2);
+                      reference_x_traj.push_back(target_x2);
+                      reference_y_traj.push_back(target_y2);
 
                       double target_s3 = pos_s + 90;
                       double target_d3 = best_target[3];
                       vector<double> target_xy3 = getXY(target_s3, target_d3, interpolated_waypoints_s, interpolated_waypoints_x, interpolated_waypoints_y);
                       double target_x3 = target_xy3[0];
                       double target_y3 = target_xy3[1];
-                      coarse_s_traj.push_back(target_s3);
-                      coarse_x_traj.push_back(target_x3);
-                      coarse_y_traj.push_back(target_y3);
+                      reference_s_traj.push_back(target_s3);
+                      reference_x_traj.push_back(target_x3);
+                      reference_y_traj.push_back(target_y3);
 
                       // cout<<"*** TARGET S = "<<best_target[0]<<"\t current_s = "<<ego_car.s<<"\t target_s1 = "<<target_s1<<"\t\t target_s2 ="<<target_s2<<endl;
                       // cout<<"*** TARGET D = "<<best_target[3]<<"\t current_d = "<<ego_car.d<<"\t target_d1 = "<<target_d1<<"\t\t target_d2 = "<<target_d2<<endl;
@@ -465,8 +460,8 @@ int main()
                         interpolated_s_traj.push_back(current_s);
                       }
 
-                      interpolated_x_traj = interpolate_points(coarse_s_traj, coarse_x_traj, interpolated_s_traj);
-                      interpolated_y_traj = interpolate_points(coarse_s_traj, coarse_y_traj, interpolated_s_traj);
+                      interpolated_x_traj = interpolate_points(reference_s_traj, reference_x_traj, interpolated_s_traj);
+                      interpolated_y_traj = interpolate_points(reference_s_traj, reference_y_traj, interpolated_s_traj);
 
                       // add previous path, if any, to next path
                       for (int i = 0; i < subpath_size; i++)

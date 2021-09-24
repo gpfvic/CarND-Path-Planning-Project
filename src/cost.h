@@ -104,7 +104,7 @@ double out_of_lane_cost(Trajectory &traj, Vehicle ego_car, double T, vector<Vehi
   double cost;
   for(int i=1;i<15;i++){
     double d = to_equation(i*DT, traj.d);
-    cost += logistic(abs(d - target_d)/4);
+    cost += logistic(abs(d - target_d));
   }
   return cost;
 }
@@ -113,15 +113,10 @@ double out_of_lane_cost(Trajectory &traj, Vehicle ego_car, double T, vector<Vehi
 
 double efficiency_cost(Trajectory &traj, Vehicle ego_car, double T, vector<Vehicle> other_cars)
 {
-  /* Rewards high average speeds. */
-  vector<double> s = traj.s;
-  double t = traj.t;
-  double S = to_equation(t, s);
-  double avg_v = S / t;
-  vector<double> target_state = ego_car.state_in(t);
-  double targ_s = target_state[0];
-  double targ_v = targ_s / t;
-  return logistic(2 * (targ_v - avg_v) / avg_v);
+  /* Rewards high speeds. */
+  double curr_v = ego_car.s_d;
+  double target_v = ego_car.target_state[1];
+  return logistic((curr_v-target_v)/target_v);
 }
 
 double total_accel_cost(Trajectory &traj, Vehicle ego_car, double T, vector<Vehicle> other_cars)
@@ -215,7 +210,7 @@ double total_jerk_cost(Trajectory &traj, Vehicle ego_car, double T, vector<Vehic
 double not_in_middle_lane_cost(Trajectory &traj, Vehicle ego_car, double T, vector<Vehicle> other_cars){
   // penalize not shooting for middle lane (d = 6)
   double target_d = traj.target_state[3];
-  return logistic(pow(target_d-6, 2));
+  return logistic(fabs(target_d-6));
 }
 
 double calculate_total_cost(Trajectory traj, Vehicle ego_car, double T, vector<Vehicle> other_cars)
@@ -233,18 +228,20 @@ double calculate_total_cost(Trajectory traj, Vehicle ego_car, double T, vector<V
   cost += TOTAL_ACCEL_COST * total_accel_cost(traj, ego_car, T, other_cars);
   cost += TOTAL_JERK_COST * total_jerk_cost(traj, ego_car, T, other_cars);
   cost += OUT_LANE_COST * out_of_lane_cost(traj, ego_car, T, other_cars);
+  cost += NOT_IN_MIDDLE_LANE_COST * not_in_middle_lane_cost(traj, ego_car, T, other_cars);
 
 
   cout << "S_DIFF_COST = " << S_DIFF_COST * s_diff_cost(traj, ego_car, T, other_cars) << endl;
   cout << "D_DIFF_COST = " <<  D_DIFF_COST * d_diff_cost(traj, ego_car, T, other_cars) << endl;
-  cout << "COLLISION_COST = " << COLLISION_COST * collision_cost(traj, ego_car, T, other_cars) << endl;
+  // cout << "COLLISION_COST = " << COLLISION_COST * collision_cost(traj, ego_car, T, other_cars) << endl;
   cout << "BUFFER_COST = " << BUFFER_COST * buffer_cost(traj, ego_car, T, other_cars) << endl;
   cout<< "EFFICIENCY_COST = "<<EFFICIENCY_COST * efficiency_cost(traj, ego_car, T, other_cars)<<endl;
-  cout << "MAX_ACCEL_COST = " << MAX_ACCEL_COST * max_accel_cost(traj, ego_car, T, other_cars) << endl;
-  cout << "MAX_JERK_COST = " << MAX_JERK_COST * max_jerk_cost(traj, ego_car, T, other_cars) << endl;
-  cout << "TOTAL_ACCEL_COST = " << TOTAL_ACCEL_COST * total_accel_cost(traj, ego_car, T, other_cars) << endl;
-  cout << "TOTAL_JERK_COST = " << TOTAL_JERK_COST * total_jerk_cost(traj, ego_car, T, other_cars) << endl;
+  // cout << "MAX_ACCEL_COST = " << MAX_ACCEL_COST * max_accel_cost(traj, ego_car, T, other_cars) << endl;
+  // cout << "MAX_JERK_COST = " << MAX_JERK_COST * max_jerk_cost(traj, ego_car, T, other_cars) << endl;
+  // cout << "TOTAL_ACCEL_COST = " << TOTAL_ACCEL_COST * total_accel_cost(traj, ego_car, T, other_cars) << endl;
+  // cout << "TOTAL_JERK_COST = " << TOTAL_JERK_COST * total_jerk_cost(traj, ego_car, T, other_cars) << endl;
   cout << "OUT_LANE_COST = " << OUT_LANE_COST * out_of_lane_cost(traj, ego_car, T, other_cars) << endl;
+  cout << "NOT_IN_MIDDLE_LANE_COST = " << NOT_IN_MIDDLE_LANE_COST * not_in_middle_lane_cost(traj, ego_car, T, other_cars) << endl;
 
   return cost;
 }

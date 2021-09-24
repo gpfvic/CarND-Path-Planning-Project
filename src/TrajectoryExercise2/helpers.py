@@ -28,7 +28,7 @@ def logistic(x):
 
     Useful for cost functions.
     """
-    return 2.0 / (1 + exp(-x)) - 1.0
+    return 2.0 / (1 + math.exp(-x)) - 1.0
 
 def to_equation(coefficients):
     """

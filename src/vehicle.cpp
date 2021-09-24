@@ -79,7 +79,7 @@ vector<double> Vehicle::get_target_for_state(string state,
                                              vector<Vehicle> other_cars, double traj_start_time,
                                              double duration, bool car_just_ahead)
 {
-  // 根据fsm状态，计算得出ego car最终的s，d
+  // based on the FSM, to compute the target s and d for the ego car
   // Returns two lists s_target and d_target in a single vector - s_target includes
   // [s, s_dot, and s_ddot] and d_target includes the same
   // If no leading car found target lane, ego car will make up PERCENT_V_DIFF_TO_MAKE_UP of the difference
@@ -122,7 +122,7 @@ vector<double> Vehicle::get_target_for_state(string state,
   // replace target_s variables if there is a leading vehicle close enough
   vector<double> leading_vehicle_s_and_sdot = get_leading_vehicle_data_for_lane(target_lane, other_cars, traj_start_time, duration);
   double leading_vehicle_s = leading_vehicle_s_and_sdot[0];
-  if (leading_vehicle_s - target_s < 10 && leading_vehicle_s > this->s)
+  if (leading_vehicle_s - target_s < 15 && leading_vehicle_s > this->s)
   {
 
     target_s_d = leading_vehicle_s_and_sdot[1];
